@@ -244,7 +244,7 @@
       while (outbox.length && guard++ < 50) {
         const actor = outbox[0].actor;
         const sess = sessions[actor];
-        if (!sess) { await dropActorOps(actor, 'No saved login for ' + actor + ' on this device.'); continue; }
+        if (!sess) break;                                  // logged out / reset: keep the changes, send them after the next login
         const batch = outbox.filter((o) => o.actor === actor).slice(0, 100);
         const res = await api({ action: 'sync', token: sess.token, ops: batch.map((o) => Object.assign({ opId: o.seq }, o.op)) });
         online = true;
@@ -311,6 +311,7 @@
 
   function sessionExpired(actor) {
     delete sessions[actor]; kvSet('sessions', sessions);
+    kvSet('scans:' + actor, null);                         // do not leave private lists on a browser that is no longer allowed
     toast('Your login for ' + actor + ' has expired or was reset. Log in again — your waiting changes are kept.', 9000);
     if (me && me.name === actor) { logout(true); $('login-name').value = actor; }
   }
@@ -515,7 +516,7 @@
     if (Date.now() - lastInteractionAt < 1500) return;
     const panel = $('qr-panel');
     if (!panel || $('app-screen').classList.contains('hidden')) return;
-    if (!$('qr-scan-tab').classList.contains('hidden')) { if (outbox.length) syncNow(); return; }
+    if (!$('qr-scan-tab').classList.contains('hidden')) { syncNow(); return; }   // also checks that this browser is still allowed (admin reset)
     if (editingInTable()) return;
     syncNow();
   }
