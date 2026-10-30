@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#0f172a">
+<title>QR Code Scanner for Electrical and Signboard</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="stylesheet" href="style.css">
+<script src="vendor/html5-qrcode.min.js"></script>
+</head>
+<body>
+
+  <!-- LOGIN SCREEN -->
+  <div id="login-screen" class="screen">
+    <div class="login-card">
+      <h1>QR Code Scanner for Electrical and Signboard</h1>
+      <p class="subtitle">Enter your registered name to continue</p>
+      <input id="login-name" type="text" placeholder="Your name" autocomplete="off" />
+      <button id="login-btn">Login</button>
+      <p id="login-error" class="error"></p>
+      <p id="login-offline-hint" class="hint hidden">You are offline. Only names that already signed in on this device can log in.</p>
+      <button id="manage-names-link" class="link-btn">Manage registered names</button>
+    </div>
+  </div>
+
+  <!-- MAIN APP -->
+  <div id="app-screen" class="screen hidden">
+    <header>
+      <h1>QR Code Scanner for Electrical and Signboard</h1>
+      <div class="user-box">
+        Signed in as <strong id="current-user"></strong>
+        <button id="logout-btn">Switch user</button>
+      </div>
+    </header>
+
+    <div id="qr-panel" class="content-panel">
+      <div class="qr-tabs">
+        <button id="qr-tab-scan" class="qr-tab-btn active">Scan</button>
+        <button id="qr-tab-log" class="qr-tab-btn">For Evaluation</button>
+        <button id="qr-tab-approved" class="qr-tab-btn">Approved</button>
+        <button id="qr-tab-disapproved" class="qr-tab-btn">Disapproved</button>
+        <button id="qr-tab-alldata" class="qr-tab-btn">All Data</button>
+        <select id="qr-scanner-filter" class="qr-category-filter qr-scanner-filter hidden" title="Show only the records scanned by one person (For Evaluation and All Data)">
+          <option value="all">Scanned By: All</option>
+        </select>
+        <select id="qr-category-filter" class="qr-category-filter">
+          <option value="all">All Categories</option>
+          <option value="electrical">Electrical Applications</option>
+          <option value="signboard">Signboard Applications</option>
+        </select>
+      </div>
+
+      <!-- SCAN TAB -->
+      <div id="qr-scan-tab" class="qr-card">
+        <label for="qr-manual-input">Add data manually</label>
+        <input id="qr-manual-input" placeholder="Type or paste data" autocomplete="off" />
+        <button id="qr-manual-save-btn">Save Data</button>
+
+        <div class="qr-scan-divider">— or scan a QR code —</div>
+
+        <div id="qr-reader"></div>
+        <button class="qr-secondary-btn" id="qr-stop-scan-btn">Pause Camera</button>
+        <button class="qr-secondary-btn hidden" id="qr-start-scan-btn">Resume Camera</button>
+        <div id="qr-result-flash" class="qr-result-flash hidden"></div>
+      </div>
+
+      <!-- LOG TAB (For Evaluation) -->
+      <div id="qr-log-tab" class="qr-card hidden">
+        <div class="qr-log-header">
+          <span>For Evaluation</span>
+          <div class="qr-log-header-actions">
+            <button class="qr-secondary-btn" id="qr-refresh-log-btn">Refresh</button>
+          </div>
+        </div>
+        <div id="qr-log-count" class="qr-count-label"></div>
+        <div id="qr-log-table-wrap" class="qr-table-scroll"></div>
+      </div>
+
+      <!-- APPROVED TAB -->
+      <div id="qr-approved-tab" class="qr-card hidden">
+        <div class="qr-log-header">
+          <span>Approved</span>
+          <div class="qr-log-header-actions">
+            <button class="qr-secondary-btn" id="qr-print-btn">🖨 Print</button>
+            <button class="qr-secondary-btn" id="qr-refresh-approved-btn">Refresh</button>
+          </div>
+        </div>
+        <div class="qr-filter-row">
+          <input id="qr-approved-search" placeholder="Search approved data…" autocomplete="off" />
+          <button class="qr-secondary-btn" id="qr-clear-approved-search-btn">Clear</button>
+        </div>
+        <div id="qr-approved-count" class="qr-count-label"></div>
+        <div id="qr-approved-table-wrap" class="qr-table-scroll"></div>
+      </div>
+
+      <!-- DISAPPROVED TAB -->
+      <div id="qr-disapproved-tab" class="qr-card hidden">
+        <div class="qr-log-header">
+          <span>Disapproved</span>
+          <div class="qr-log-header-actions">
+            <button class="qr-secondary-btn" id="qr-refresh-disapproved-btn">Refresh</button>
+          </div>
+        </div>
+        <div class="qr-filter-row">
+          <input id="qr-disapproved-search" placeholder="Search disapproved data…" autocomplete="off" />
+          <button class="qr-secondary-btn" id="qr-clear-disapproved-search-btn">Clear</button>
+        </div>
+        <div id="qr-disapproved-count" class="qr-count-label"></div>
+        <div id="qr-disapproved-table-wrap" class="qr-table-scroll"></div>
+      </div>
+
+      <!-- ALL DATA TAB (printed records) -->
+      <div id="qr-alldata-tab" class="qr-card hidden">
+        <div class="qr-log-header">
+          <span>All Data</span>
+          <span>
+            <button class="qr-secondary-btn" id="qr-download-alldata-btn" title="Download what is shown here (date / category / search) as an Excel file">Download Excel</button>
+            <button class="qr-secondary-btn" id="qr-refresh-alldata-btn">Refresh</button>
+          </span>
+        </div>
+        <div class="qr-filter-row">
+          <input id="qr-alldata-search" placeholder="Search all printed data…" autocomplete="off" />
+          <button class="qr-secondary-btn" id="qr-clear-alldata-search-btn">Clear</button>
+        </div>
+        <div class="qr-filter-row">
+          <label class="qr-inline-label">Filter by date:</label>
+          <input id="qr-alldata-date-filter" type="date" />
+          <button class="qr-secondary-btn" id="qr-clear-alldata-date-btn">Clear date</button>
+        </div>
+        <div id="qr-alldata-count" class="qr-count-label"></div>
+        <div id="qr-alldata-table-wrap" class="qr-table-scroll"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- status bar: online / waiting to sync / sync issues (always visible) -->
+  <div id="statusbar" class="statusbar hidden">
+    <span class="dot"></span><span id="sb-net">Online</span>
+    <span id="sb-wait" class="pill wait hidden"></span>
+    <span id="sb-issue" class="pill issue hidden"></span>
+    <span id="sb-last" class="small"></span>
+    <span class="spacer"></span>
+    <button id="sb-sync" title="Send waiting changes and refresh now">Sync now</button>
+    <button id="sb-install" class="hidden">Install app</button>
+  </div>
+
+  <!-- sync issues -->
+  <div id="issues-modal" class="modal-overlay hidden">
+    <div class="modal-box wide">
+      <p><strong>Changes the server did not accept</strong></p>
+      <ul id="issues-list" class="issues-list"></ul>
+      <div class="modal-actions">
+        <button id="issues-clear">Clear list</button>
+        <button id="issues-close">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- confirm -->
+  <div id="confirm-modal" class="modal-overlay hidden">
+    <div class="modal-box">
+      <p id="confirm-message"></p>
+      <div class="modal-actions">
+        <button id="confirm-cancel">Cancel</button>
+        <button id="confirm-ok">Confirm</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- admin: registered names -->
+  <div id="manage-names-modal" class="modal-overlay hidden">
+    <div class="modal-box manage-box big">
+
+      <div id="pw-setup-state" class="hidden">
+        <h2>Set Admin Password</h2>
+        <p class="manage-hint">Create a password to protect the registered-names list. You'll need it to manage names from now on.</p>
+        <input id="setup-password" type="password" placeholder="New password (6+ characters)" autocomplete="new-password" />
+        <input id="setup-password-confirm" type="password" placeholder="Confirm password" autocomplete="new-password" />
+        <p id="setup-error" class="error"></p>
+        <button id="setup-password-btn" class="primary-btn">Set Password</button>
+        <button id="setup-cancel-btn" class="close-manage-btn">Cancel</button>
+      </div>
+
+      <div id="pw-lock-state" class="hidden">
+        <h2>Admin Access</h2>
+        <p class="manage-hint">Enter the admin password to manage registered names.</p>
+        <input id="unlock-password" type="password" placeholder="Password" autocomplete="current-password" />
+        <p id="unlock-error" class="error"></p>
+        <button id="unlock-btn" class="primary-btn">Unlock</button>
+        <button id="unlock-cancel-btn" class="close-manage-btn">Cancel</button>
+      </div>
+
+      <div id="pw-change-state" class="hidden">
+        <h2>Change Admin Password</h2>
+        <input id="change-old-password" type="password" placeholder="Current password" autocomplete="current-password" />
+        <input id="change-new-password" type="password" placeholder="New password (6+ characters)" autocomplete="new-password" />
+        <p id="change-error" class="error"></p>
+        <button id="change-password-btn" class="primary-btn">Change Password</button>
+        <button id="change-cancel-btn" class="close-manage-btn">Back</button>
+      </div>
+
+      <div id="manage-unlocked-state" class="hidden">
+        <h2>Registered Names</h2>
+        <p class="manage-hint">Only names in this list can log in. The email is the person's Google account email (for your records).</p>
+        <div class="manage-add-row col">
+          <input id="new-registered-name" type="text" placeholder="Login name (case-sensitive)" autocomplete="off" />
+          <input id="new-registered-display" type="text" placeholder="Display name (optional)" autocomplete="off" />
+          <input id="new-registered-email" type="email" placeholder="Google account email" autocomplete="off" />
+          <button id="register-name-btn">Add</button>
+        </div>
+        <p id="register-error" class="error"></p>
+        <ul id="registered-list" class="registered-list"></ul>
+        <p id="registered-empty" class="empty-state hidden">No names registered yet. Add one above to get started.</p>
+        <button id="change-password-link" class="link-btn">Change admin password</button>
+        <button id="close-manage-btn" class="close-manage-btn">Done</button>
+      </div>
+
+    </div>
+  </div>
+
+  <div id="toast-container" class="toast-container"></div>
+
+<script src="config.js"></script>
+<script src="rules.js"></script>
+<script src="xlsx.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
