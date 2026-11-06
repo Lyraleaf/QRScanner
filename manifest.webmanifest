@@ -1,7 +1,7 @@
 {
-  "name": "QR Code Scanner",
-  "short_name": "QR Scanner",
-  "description": "QR Code Scanner for Electrical and Signboard - works offline",
+  "name": "Manual Prechecking, QR Scanner and Transmittal",
+  "short_name": "Approval Sheet",
+  "description": "Manual Prechecking, QR Code Scanner and Transmittal QR - works offline",
   "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",
