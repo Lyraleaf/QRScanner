@@ -35,13 +35,17 @@
           <h1>Receiving Section Applications Management System</h1>
           <p class="brand-text">Prechecking, QR scanning and transmittals in one place. Works even when the internet drops.</p>
         </div>
-        <div class="brand-foot">Sign in with the Google account your admin added.</div>
+        <div class="brand-foot">Sign in with the user name your admin registered.</div>
       </div>
       <div class="login-side">
         <div class="login-card">
           <h2>Welcome back</h2>
           <p class="subtitle">Sign in to continue</p>
-          <div id="g-btn" class="g-btn"></div>
+          <form id="login-form" class="login-form" autocomplete="off">
+            <label for="login-username" class="login-label">Registered user name</label>
+            <input id="login-username" type="text" placeholder="e.g. Juan" autocomplete="username" autocapitalize="off" spellcheck="false" maxlength="80" />
+            <button id="login-btn" type="submit" class="login-submit">Continue</button>
+          </form>
           <p id="login-error" class="error"></p>
           <p id="login-offline-hint" class="hint hidden">You are offline. You can only continue as a person who already signed in on this device.</p>
           <p id="login-accounts-title" class="hint hidden">Already signed in on this device:</p>
