@@ -19,6 +19,18 @@
     renderSafely(renderApprovedTable, 'Approved');
     renderSafely(renderDisapprovedTable, 'Disapproved');
     renderSafely(renderAllDataTable, 'All Data');
+    renderSafely(updateStats, 'summary');
+  }
+  function updateStats() {
+    if (!window.Design) return;
+    const n = (st) => currentScans.filter((s) => s.status === st).length;
+    const today = Core.todayStr();
+    window.Design.stats('qr-stats', [
+      { label: 'For Evaluation', value: n('pending'), tone: 'amber' },
+      { label: 'Approved', value: n('approved'), tone: 'green' },
+      { label: 'Disapproved', value: n('disapproved'), tone: 'red' },
+      { label: 'Scanned today', value: currentScans.filter((s) => s.date === today).length, tone: 'violet' }
+    ]);
   }
   function renderSafely(fn, label) { try { fn(); } catch (e) { console.error('render ' + label, e); } }
 

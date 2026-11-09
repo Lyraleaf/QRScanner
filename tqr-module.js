@@ -416,6 +416,18 @@
     renderSafely(renderAllDataTable, 'Transmitted / All Data');
     renderSafely(updateWaits, 'waiting times');
     renderSafely(checkOverdue, 'overdue check');
+    renderSafely(updateStats, 'summary');
+  }
+  function updateStats() {
+    if (!window.Design) return;
+    const all = Core.me() ? Core.view('tqr') : [];
+    const n = (st) => all.filter((s) => s.status === st).length;
+    window.Design.stats('tqr-stats', [
+      { label: 'For Transmittal', value: n('pending'), tone: 'amber' },
+      { label: 'On-Going Legal', value: n('legal'), tone: 'blue' },
+      { label: 'Returned from Legal', value: n('returned'), tone: 'violet' },
+      { label: 'Overdue', value: all.filter(isOverdue).length, tone: 'red' }
+    ]);
   }
   ['log', 'legal', 'returned', 'alldata'].forEach((t) => on('tqr-refresh-' + t + '-btn', 'click', () => { Core.syncNow({ force: true, manual: true }); renderAll(); }));
 
@@ -475,6 +487,7 @@
     setBadge($('tqr-tab-returned'), over.filter((s) => s.status === 'returned').length);
     setBadge(document.querySelector('.sidebar-tab[data-target="tqr-panel"]'), over.length);
     document.title = over.length ? '⏰ (' + over.length + ') ' + baseTitle : baseTitle;
+    try { updateStats(); } catch (e) { /* cosmetic */ }
     const key = (s) => s.uuid + ':' + s.status + ':' + sinceOf(s);
     const fresh = over.filter((s) => !notified.has(key(s)));
     fresh.forEach((s) => notified.add(key(s)));
