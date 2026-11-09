@@ -1,7 +1,7 @@
 /* Service worker: keeps the app itself (page, scripts, styles, camera library) available offline.
  * Network first (so updates arrive as soon as there is internet), cache as the fallback.
  * Calls to the Apps Script server are cross-origin and are never touched here. */
-const CACHE = 'approval-sheet-shell-v2';
+const CACHE = 'approval-sheet-shell-v3';
 const SHELL = [
   './', 'index.html', 'style.css', 'config.js', 'rules.js', 'tqr-rules.js', 'pc-rules.js', 'xlsx.js', 'core.js', 'pc-module.js', 'qr-module.js', 'tqr-module.js',
   'manifest.webmanifest', 'icon-192.png', 'icon-512.png', 'vendor/html5-qrcode.min.js'

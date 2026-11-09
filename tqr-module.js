@@ -190,6 +190,7 @@
   let voicePref = 'auto', voiceRate = 1.05;
   try { voicePref = localStorage.getItem('tqrVoice') || 'auto'; voiceRate = Number(localStorage.getItem('tqrVoiceSpeed')) || 1.05; } catch (e) { /* defaults */ }
   const VOICE_FOR = { pending: 'Scanned', legal: 'Forwarded to legal', returned: 'Received from legal', printed: 'Transmitted' };
+  const VOICE_BACK = { pending: 'Moved back to for transmittal', legal: 'Moved back to ongoing legal evaluation', returned: 'Moved back to returned from legal' };
   let speechPrimed = false;
   function primeSpeech() {
     // iPhones/iPads only allow speech after it was first started by a tap.
@@ -273,6 +274,23 @@
     const meta = (e) => `${escapeHtml(e.date)} ${escapeHtml(e.time)} · ${escapeHtml(e.scannedByName)}`;
     if (existing) {
       // Camera scan of data in a working step: ask before moving it. Typing never moves it.
+      if (source === 'camera' && existing.status === 'legal') {
+        // On-Going Legal Evaluation -> Returned from Legal: no message box, the scan moves it straight away.
+        const r2 = await submit({ type: 'move', uuid: existing.uuid, from: 'legal', to: 'returned' }, existing.data);
+        if (r2.ok) {
+          const e2 = r2.entry || existing;
+          showCheck(VOICE_FOR[e2.status]);
+          flash.innerHTML = `
+            <div class="qr-flash-heading">✔ Moved to ${escapeHtml(STAGE_LABEL[e2.status])}</div>
+            ${dataLine(e2)}
+            <div class="qr-flash-meta">was in ${escapeHtml(STAGE_LABEL.legal)}</div>`;
+        } else {
+          playSound('warn');
+          flash.classList.add('error');
+          flash.innerHTML = `<div class="qr-flash-heading">Not moved</div><div class="qr-flash-meta">${escapeHtml(r2.error)}</div>`;
+        }
+        return true;
+      }
       if (source === 'camera' && existing.status !== 'printed') {
         flash.classList.add('hidden');
         playSound('ask');
@@ -491,6 +509,11 @@
     if (qq) rows = rows.filter((s) => matchesSearch(s, qq));
     return rows;
   }
+  // On a phone the tables turn into one card per record; each cell shows its own column name in front of its value.
+  function labelCells(wrap) {
+    const heads = [...wrap.querySelectorAll('thead th')].map((th) => th.textContent.trim());
+    wrap.querySelectorAll('tbody tr').forEach((tr) => [...tr.children].forEach((td, i) => td.setAttribute('data-label', heads[i] || '')));
+  }
   const waitingTag = (s) => (Core.isQueued(s.uuid) ? '<span class="qr-pending-tag" title="Saved on this device, waiting to reach the server">⏳</span>' : '');
   function renderStageTable(stage) {
     const ui = STAGE_UI[stage];
@@ -521,6 +544,7 @@
         </td></tr>`;
     }
     wrap.innerHTML = html + '</tbody></table>';
+    labelCells(wrap);
     updateWaits();
   }
   ['log', 'legal', 'returned'].forEach((prefix) => {
@@ -560,6 +584,7 @@
       </tr>`;
     }
     wrap.innerHTML = html + '</tbody></table>';
+    labelCells(wrap);
   }
   on('tqr-alldata-search', 'input', renderAllDataTable);
   on('tqr-clear-alldata-search-btn', 'click', () => { $('tqr-alldata-search').value = ''; renderAllDataTable(); });
@@ -597,14 +622,18 @@
   }
   // `from` is the step this screen showed, so if someone else moved it first the server refuses it
   // (the person is told under "Sync issues").
-  async function setStatus(id, status) {
+  async function setStatus(id, status, announce) {
     const cur = findById(id);
     const r = await submit({ type: 'move', uuid: id, from: cur ? cur.status : undefined, to: status }, cur ? cur.data : '');
     if (!r.ok) alert(r.error || 'Could not update record.');
     renderAll();
+    if (r.ok && announce) {
+      const st = (r.entry && r.entry.status) || status;
+      showCheck(announce === 'back' ? VOICE_BACK[st] : VOICE_FOR[st]);   // same chime, check and voice as the message box
+    }
   }
-  function forward(id) { const cur = findById(id); const next = cur && nextStage(cur.status); if (next) setStatus(id, next); }
-  function back(id) { const cur = findById(id); const prev = cur && prevStage(cur.status); if (prev) setStatus(id, prev); }
+  function forward(id) { const cur = findById(id); const next = cur && nextStage(cur.status); if (next) setStatus(id, next, true); }
+  function back(id) { const cur = findById(id); const prev = cur && prevStage(cur.status); if (prev) setStatus(id, prev, 'back'); }
 
   // ---------- print the For Transmittal list ----------
   on('tqr-print-btn', 'click', () => {

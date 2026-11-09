@@ -1331,3 +1331,29 @@ body { min-height: 100vh; }
 .manage-box.big { max-width: 760px; }
 .tqr-sound-row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-top: 8px; }
 .tqr-sound-row select { max-width: 180px; }
+
+/* Transmittal QR — phone view: each record is a card instead of a squeezed table */
+@media (max-width: 700px) {
+  #tqr-panel table, #tqr-panel tbody, #tqr-panel tr, #tqr-panel td { display: block; width: 100%; }
+  #tqr-panel thead { display: none; }
+  #tqr-panel tr { border: 1px solid #d9d4c8; border-radius: 10px; margin: 0 0 12px; padding: 10px 12px; background: #fff; box-sizing: border-box; }
+  #tqr-panel tr.tqr-overdue { background: #fef2f2; border-color: #fca5a5; }
+  #tqr-panel td { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; border: 0 !important; padding: 4px 0; text-align: right; word-break: normal; overflow-wrap: anywhere; box-sizing: border-box; font-size: 0.88rem; }
+  #tqr-panel tr.tqr-overdue td { background: transparent; }
+  #tqr-panel td::before { content: attr(data-label); flex: 0 0 38%; max-width: 42%; text-align: left; color: var(--qr-muted); font-size: 0.7rem; font-weight: 700; text-transform: uppercase; padding-top: 3px; }
+  #tqr-panel td[data-label=""]::before { display: none; }
+  #tqr-panel td:first-child { display: block; text-align: left; font-size: 1rem; font-weight: 700; padding-bottom: 6px; }
+  #tqr-panel td:first-child::before { display: none; }
+  #tqr-panel td.qr-name-cell { min-width: 0; }
+  #tqr-panel td.qr-name-cell input { width: 100%; min-width: 0; }
+  #tqr-panel td.qr-row-actions { display: flex; flex-wrap: wrap; justify-content: stretch; gap: 8px; margin-top: 6px; padding-top: 10px; border-top: 1px solid #e5e0d6 !important; }
+  #tqr-panel td.qr-row-actions::before { display: none; }
+  #tqr-panel td.qr-row-actions button { flex: 1 1 auto; min-height: 42px; font-size: 0.9rem; margin: 0; width: auto; }
+  #tqr-panel td.qr-row-actions .qr-forward-btn, #tqr-panel td.qr-row-actions .qr-revert-btn { flex: 1 1 60%; }
+  #tqr-panel td.qr-row-actions .qr-del-btn { flex: 0 0 auto; min-width: 52px; }
+  #tqr-panel .qr-category-filter { width: 100%; margin-left: 0; }
+  #tqr-panel .qr-log-header { flex-wrap: wrap; gap: 8px; }
+  #tqr-panel .qr-log-header > span:last-child, #tqr-panel .qr-log-header-actions { display: flex; flex-wrap: wrap; gap: 6px; }
+  #tqr-panel .qr-filter-row { flex-wrap: wrap; }
+  #tqr-panel .qr-filter-row input[type="date"] { flex: 1 1 100%; }
+}
