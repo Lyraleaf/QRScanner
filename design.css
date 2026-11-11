@@ -275,5 +275,6 @@ html[data-theme="dark"] .login-card input, html[data-theme="dark"] .login-card s
 .login-form { display: flex; flex-direction: column; gap: 10px; margin: 8px 0 4px; }
 .login-label { font-size: 13px; font-weight: 600; color: var(--muted, #5B6478); }
 .login-form input { width: 100%; box-sizing: border-box; min-height: 48px; padding: 10px 14px; font-size: 16px; border-radius: 12px; }
+.login-form .g-btn { margin: 4px 0 0; justify-content: flex-start; }
 .login-submit { min-height: 48px; border-radius: 12px; font-size: 15px; font-weight: 600; background: #2F5BEA; color: #fff; border: 0; cursor: pointer; }
 .login-submit:disabled { opacity: .6; }

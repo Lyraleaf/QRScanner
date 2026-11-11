@@ -234,7 +234,7 @@
     await kvSet('issues', issues);
     renderStatus();
   }
-  window.addEventListener('online', () => { online = true; renderStatus(); syncNow({ force: true }); });
+  window.addEventListener('online', () => { online = true; renderStatus(); loadGsi(); syncNow({ force: true }); });
   window.addEventListener('offline', () => { online = false; renderStatus(); });
 
   // ---------------------------------------------------------------- sync engine
@@ -449,7 +449,7 @@
     if (id) showModule(id);
   }));
 
-  // ---------------------------------------------------------------- sign-in (registered user name)
+  // ---------------------------------------------------------------- sign-in (user name + Google)
   function clientInfo() {
     let device = '';
     try { device = (navigator.userAgentData && navigator.userAgentData.platform) || navigator.platform || ''; } catch (e) { /* ignore */ }
@@ -458,14 +458,34 @@
     let tz = ''; try { tz = Intl.DateTimeFormat().resolvedOptions().timeZone; } catch (e) { /* ignore */ }
     return { browser, device: device + (/Mobile|Android|iPhone/i.test(ua) ? ' (mobile)' : ''), screen: screen.width + 'x' + screen.height, lang: navigator.language || '', tz };
   }
-  async function onLoginSubmit(ev) {
-    if (ev) ev.preventDefault();
+  let gsiState = 'none';
+  function loadGsi() {
+    if (gsiState !== 'none' || !navigator.onLine) return;
+    if (window.google && window.google.accounts) return initGoogle();
+    gsiState = 'loading';
+    const s = document.createElement('script');
+    s.src = 'https://accounts.google.com/gsi/client'; s.async = true;
+    s.onload = () => { gsiState = 'none'; initGoogle(); };
+    s.onerror = () => { gsiState = 'none'; s.remove(); $('login-error').textContent = 'Could not load Google sign-in. Check your internet and reload.'; };
+    document.head.appendChild(s);
+  }
+  function initGoogle() {
+    try {
+      if (!window.google || !google.accounts || !google.accounts.id) return;
+      if (!CFG.GOOGLE_CLIENT_ID || /PASTE/.test(CFG.GOOGLE_CLIENT_ID)) { $('login-error').textContent = 'The Google Client ID is not set yet (config.js).'; return; }
+      google.accounts.id.initialize({ client_id: CFG.GOOGLE_CLIENT_ID, callback: onGoogleCredential, auto_select: false });
+      const host = $('g-btn'); host.innerHTML = '';
+      google.accounts.id.renderButton(host, { theme: 'outline', size: 'large', text: 'signin_with', width: 280 });
+      gsiState = 'ready';
+    } catch (e) { console.warn('google sign-in', e); $('login-error').textContent = 'Google sign-in failed to start: ' + e.message; }
+  }
+  async function onGoogleCredential(resp) {
     const err = $('login-error'); err.textContent = '';
     const username = ($('login-username').value || '').trim();
-    if (!username) { err.textContent = 'Type your registered user name.'; return; }
-    const btn = $('login-btn'); btn.disabled = true;
+    if (!username) { err.textContent = 'Type your registered user name first, then tap the Google button.'; $('login-username').focus(); return; }
+    if (!resp || !resp.credential) { err.textContent = 'Google sign-in was cancelled.'; return; }
     try {
-      const res = await api({ action: 'login', username, info: clientInfo() });
+      const res = await api({ action: 'login', username, idToken: resp.credential, info: clientInfo() });
       online = true;
       if (!res.ok) { err.textContent = res.error || 'Sign-in failed.'; return; }
       sessions[res.me.email] = { token: res.token, me: res.me };
@@ -475,9 +495,8 @@
     } catch (e) {
       err.textContent = e.network ? 'No connection. Without internet you can only continue as a person already signed in on this device.' : e.message;
       if (e.network) online = false;
-    } finally { btn.disabled = false; }
+    }
   }
-  $('login-form').addEventListener('submit', onLoginSubmit);
   function renderAccounts() {
     const box = $('login-accounts'); box.innerHTML = '';
     const list = Object.keys(sessions);
@@ -499,7 +518,7 @@
     $('app-screen').classList.add('hidden');
     $('login-screen').classList.remove('hidden');
     $('login-offline-hint').classList.toggle('hidden', navigator.onLine);
-    renderAccounts(); renderStatus();
+    renderAccounts(); loadGsi(); renderStatus();
   }
   function paintUser() {
     if (!me) return;
@@ -585,9 +604,9 @@
     const body = $('admin-body'), d = adminData;
     if (adminTab === 'people') {
       body.innerHTML = `
-        <p class="manage-hint">Only the people listed here can sign in, by typing their registered user name. The email is kept as their verified record and is not used to sign in. User names must be unique. Removing or turning off a person blocks them at once.</p>
+        <p class="manage-hint">Only the people listed here can sign in, by typing their registered user name and verifying with the Google email registered for it. Type the email exactly as it appears on their Google account. User names must be unique. Removing or turning off a person blocks them at once.</p>
         <div class="manage-add-row col">
-          <input id="np-email" type="email" placeholder="Registered email (record only)" autocomplete="off" />
+          <input id="np-email" type="email" placeholder="Google email for this person (e.g. juan@gmail.com)" autocomplete="off" />
           <input id="np-name" type="text" placeholder="User name used to sign in (e.g. Juan)" autocomplete="off" />
           <input id="np-display" type="text" placeholder="Display name (optional)" autocomplete="off" />
           <label class="admin-check"><input id="np-admin" type="checkbox" /> Admin</label>
